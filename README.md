@@ -165,7 +165,7 @@ If you find the code or the paper useful for your research, please cite our pape
 
 ## Credits
 Other contributors:  
-[Pranav Sriram]()  
+[Pranav Sriram](https://www.linkedin.com/in/pranavsriram1/)  
 
 ## Contact
 If you have any questions or find any bugs, please feel free to open an issue or pull request.
