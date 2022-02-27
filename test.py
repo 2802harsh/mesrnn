@@ -29,7 +29,7 @@ def test_loop(model, dataset, args, save_prefix="", save=False):
     """
     with torch.no_grad():
         epoch_start = time()
-        for i in range(2):#len(dataset)):
+        for i in range(len(dataset)):
 
             logging.info(f"Test sample {i}/{len(dataset)}")
             start_sample = time()

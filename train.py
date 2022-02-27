@@ -48,7 +48,7 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
     DSIZE = len(dataset)
     print(f"Dataset has {len(dataset)} samples. Training on {DSIZE} samples.")
 
-    for i in range(2):#DSIZE):
+    for i in range(DSIZE):
         logging.info(f"Training sample {i}/{DSIZE}")
         start_sample = time()
         # trajectories is a tensor of shape [N, obs_length + pred_length, input_length] which has already been covered
@@ -201,7 +201,7 @@ def val_loop(model, dataset, loss_fn, args, save_prefix="", save=False):
     with torch.no_grad():
         epoch_start = time()
         epoch_loss = 0
-        for i in range(2):#len(dataset)):
+        for i in range(len(dataset)):
 
             logging.info(f"Validation sample {i}/{len(dataset)}")
             start_sample = time()
