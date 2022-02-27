@@ -161,7 +161,6 @@ If you find the code or the paper useful for your research, please cite our pape
   booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
   year={2022}
 }
-}
 ```
 
 ## Credits
