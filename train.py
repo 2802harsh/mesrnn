@@ -337,6 +337,7 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # Adding one more argument to
     args.device = device
+    print(device)
 
     #log_path = join(args.log_dir, str(args.test_dataset))
     log_path = join(args.log_dir)
