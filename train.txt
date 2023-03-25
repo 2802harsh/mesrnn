@@ -1,0 +1,1 @@
+python train.py --epochs 2 --test_dataset 0 --num_edges 6  --use_temporal --use_spatial --use_ss --use_st --use_ts --use_tt --model "mesrnn" 
