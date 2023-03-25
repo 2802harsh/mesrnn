@@ -120,6 +120,7 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvatu
         logging.info("Starting predicted period")
         start_time = time()
         # prediction period
+        cl = 0
         for t in range(args.obs_length, args.obs_length + args.pred_length):
             # get edges for all nodes
             all_node_edges = utils.getEdgesAndMetaPaths(trajectories, valid_peds, N, t - 1, args.use_ss or
@@ -149,16 +150,30 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvatu
                         nodeRNN_hidden_state=nodeRNN_hidden_states[n], nodeRNN_cell_state=nodeRNN_cell_states[n])
                 output_trajectories[n, t, :] = output_traj
 
+                if curvature_loss == True:
+                    alpha = 0.7
+                    delta = [x2-x1 for x1, x2 in zip(output_traj[1:],output_traj[:-1])]
+                    deltaSum = [x2+x1 for x1, x2 in zip(delta[1:],delta[:-1])]
+                    cl += alpha * sum(deltaSum)
+
         logging.info(f"Finished predicted period in {time() - start_time} s.")
         # loss calculated only for the trajectories that were predicted
         loss = loss_fn(output_trajectories[:valid_peds, args.obs_length:, :], trajectories[:valid_peds, args.obs_length:, :])
 
 
+        # if curvature_loss == True:
+        #     alpha = 0.7
+        #     delta = [x2-x1 for x1, x2 in zip(output_traj[1:],output_traj[:-1])]
+        #     deltaSum = [x2+x1 for x1, x2 in zip(delta[1:],delta[:-1])]
+        #     cl = alpha * sum(deltaSum)
+        # cl = torch.tensor([cl])
+        # loss  = torch.add(loss,cl)
+
         if curvature_loss == True:
-            alpha = 0.7
-            delta = [x2-x1 for x1, x2 in zip(output_traj[1:],output_traj[:-1])]
-            deltaSum = [x2+x1 for x1, x2 in zip(delta[1:],delta[:-1])]
-            cl = alpha * sum(deltaSum)
+            # alpha = 0.7
+            # delta = [x1-x2 for x1, x2 in zip(output_trajectories[1:valid_peds, args.obs_length:, :], output_trajectories[:valid_peds-1, args.obs_length:, :])]
+            # deltaSum = [x2+x1 for x1, x2 in zip(delta[1:],delta[:-1])]
+            # cl = alpha * sum(deltaSum)
             cl = torch.tensor([cl])
             loss  = torch.add(loss,cl)
 
