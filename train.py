@@ -24,7 +24,7 @@ import logging
 from time import time
 
 
-def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
+def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvature_loss=True):
     """
     Tuns one epoch loop
     :param model: The model to be used
@@ -152,6 +152,15 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
         logging.info(f"Finished predicted period in {time() - start_time} s.")
         # loss calculated only for the trajectories that were predicted
         loss = loss_fn(output_trajectories[:valid_peds, args.obs_length:, :], trajectories[:valid_peds, args.obs_length:, :])
+
+
+        if curvature_loss == True:
+            alpha = 0.7
+            delta = [x2-x1 for x1, x2 in zip(output_traj[1:],output_traj[:-1])]
+            deltaSum = [x2+x1 for x1, x2 in zip(delta[1:],delta[:-1])]
+            cl = alpha * sum(deltaSum)
+            cl = torch.tensor([cl])
+            loss  = torch.add(loss,cl)
 
         logging.info(f"Loss for scene is {loss.item()}")
         # saving loss
