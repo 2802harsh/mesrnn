@@ -22,6 +22,8 @@ from torch.utils.data.dataset import random_split
 from pickle import dump
 import logging
 from time import time
+import numpy as np
+import copy
 
 
 def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
@@ -56,6 +58,8 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
         trajectories, valid_peds, N, _, _, _, _, _, _ = dataset[i]
         trajectories = trajectories.float()
         output_trajectories = Variable(torch.zeros((N, args.obs_length + args.pred_length, args.input_length))).to(
+                args.device)
+        vel_trajectories = Variable(torch.zeros((N, args.obs_length + args.pred_length, args.input_length))).to(
                 args.device)
 
         # initializing state variables for model
@@ -120,6 +124,7 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
         logging.info("Starting predicted period")
         start_time = time()
         # prediction period
+        # vel_trajectories = []
         for t in range(args.obs_length, args.obs_length + args.pred_length):
             # get edges for all nodes
             all_node_edges = utils.getEdgesAndMetaPaths(trajectories, valid_peds, N, t - 1, args.use_ss or
@@ -142,12 +147,44 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
                     edges.append(all_node_edges[n][utils.TT_IDX])
 
                 # run through
-                output_traj, edgeRNN_hidden_states[n], edgeRNN_cell_states[n],\
+                vel_traj, edgeRNN_hidden_states[n], edgeRNN_cell_states[n],\
                 nodeRNN_hidden_states[n], nodeRNN_cell_states[n]\
                     = model(node_pos=trajectories[n, t - 1, :].clone(), edges=edges,
                           edgeRNN_hidden_states=edgeRNN_hidden_states[n], edgeRNN_cell_states=edgeRNN_cell_states[n],
                         nodeRNN_hidden_state=nodeRNN_hidden_states[n], nodeRNN_cell_state=nodeRNN_cell_states[n])
-                output_trajectories[n, t, :] = output_traj
+                vel_trajectories[n,t,:] = vel_traj
+
+                
+                # output_trajectories[n, t, :] = output_traj
+        
+        # Velocity Operations:
+        # vmin = 0
+        # vmax = 5
+        
+        ot_np = np.array(output_trajectories[:,:args.obs_length,:])
+        ot_v = copy.deepcopy(output_trajectories)
+        for t in range(args.obs_length-1):
+            for n in range(valid_peds):
+                ot_v[n,t,:] = [v2-v1 for v1,v2 in zip(output_trajectories[n,t,:], output_trajectories[n,t+1,:])]
+        
+        ot_v_np = np.array(ot_v)
+        vmax = np.max(ot_v_np)
+        vmin = np.min(ot_v_np)
+
+        vt_np = np.array(vel_trajectories)
+
+        #Sigmoid
+        vt_np_sig = 1/(1+np.exp(-vt_np))
+        vt_final = vmin + vt_np_sig*(vmax-vmin)
+        #ReLU
+
+        vel_trajectories = vt_final.tolist()
+
+
+        #Convert back to trajectories:
+        for t in range(args.obs_length, args.obs_length + args.pred_length):
+            for n in range(valid_peds):
+                output_trajectories[n,t,:] = [p+v for p,v in zip(output_trajectories[n,t-1,:], vel_trajectories[n,t,:])]
 
         logging.info(f"Finished predicted period in {time() - start_time} s.")
         # loss calculated only for the trajectories that were predicted
