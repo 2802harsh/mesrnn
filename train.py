@@ -173,7 +173,7 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvatu
             # delta = [x1-x2 for x1, x2 in zip(output_trajectories[1:(valid_peds+1),args.obs_length:,:],output_trajectories[:valid_peds, args.obs_length:, :])]
             # deltaSum = [x2+x1 for x1, x2 in zip(delta[1:],delta[:-1])]
             # cl = alpha * sum(deltaSum)
-            cl = torch.tensor([cl])
+            cl = torch.tensor([cl]).to(args.device)
             loss  = torch.add(loss,cl)
 
         logging.info(f"Loss for scene is {loss.item()}")
