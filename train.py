@@ -77,6 +77,13 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvatu
         # zero gradients
         optimizer.zero_grad()
 
+        # Convert positions to velocity relative to first frame
+
+        # print("BEFORE",trajectories)
+        initial_pos = trajectories[:, 0:1, :]
+        # print("POSS",initial_pos)
+        trajectories[:,1:,:] = trajectories[:,1:,:] - initial_pos
+        # print("AFTER",trajectories)
         # observed trajectories are taken as is
         output_trajectories[:, :args.obs_length, :] = trajectories[:, :args.obs_length, :]
 
@@ -161,17 +168,9 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvatu
         loss = loss_fn(output_trajectories[:valid_peds, args.obs_length:, :], trajectories[:valid_peds, args.obs_length:, :])
 
 
-        # if curvature_loss == True:
-        #     alpha = 0.7
-        #     delta = [x2-x1 for x1, x2 in zip(output_traj[1:],output_traj[:-1])]
-        #     deltaSum = [x2+x1 for x1, x2 in zip(delta[1:],delta[:-1])]
-        #     cl = alpha * sum(deltaSum)
-        # cl = torch.tensor([cl])
-        # loss  = torch.add(loss,cl)
-
         if curvature_loss == True:
             # alpha = 0.7
-            # delta = [x1-x2 for x1, x2 in zip(output_trajectories[1:valid_peds, args.obs_length:, :], output_trajectories[:valid_peds-1, args.obs_length:, :])]
+            # delta = [x1-x2 for x1, x2 in zip(output_trajectories[1:(valid_peds+1),args.obs_length:,:],output_trajectories[:valid_peds, args.obs_length:, :])]
             # deltaSum = [x2+x1 for x1, x2 in zip(delta[1:],delta[:-1])]
             # cl = alpha * sum(deltaSum)
             cl = torch.tensor([cl])
@@ -361,7 +360,6 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     # Adding one more argument to
     args.device = device
-    print(device)
 
     #log_path = join(args.log_dir, str(args.test_dataset))
     log_path = join(args.log_dir)
