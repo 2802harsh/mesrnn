@@ -161,7 +161,6 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
         # vmin = 0
         # vmax = 5
         
-        ot_np = np.array(output_trajectories[:,:args.obs_length,:])
         ot_v = copy.deepcopy(output_trajectories)
         for t in range(args.obs_length-1):
             for n in range(valid_peds):
@@ -170,7 +169,7 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
                 else:
                     ot_v[n,t,:] = [v2-v1 for v1,v2 in zip(output_trajectories[n,t-1,:], output_trajectories[n,t,:])]
         
-        ot_v_np = np.array(ot_v)
+        ot_v_np = ot_v.detach().cpu().numpy()
         vmax = np.max(ot_v_np)
         vmin = np.min(ot_v_np)
 
