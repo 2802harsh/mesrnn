@@ -24,7 +24,7 @@ import logging
 from time import time
 
 
-def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvature_loss=True):
+def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvature_loss=False):
     """
     Tuns one epoch loop
     :param model: The model to be used
