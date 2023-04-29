@@ -189,7 +189,7 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
         #Convert back to trajectories:
         for t in range(args.obs_length, args.obs_length + args.pred_length):
             for n in range(valid_peds):
-                output_trajectories[n,t,:] = [p+v for p,v in zip(output_trajectories[n,t-1,:], vt_final[n,t,:])]
+                output_trajectories[n,t,:] = output_trajectories[n,t-1,:] + vt_final[n,t,:]
 
         logging.info(f"Finished predicted period in {time() - start_time} s.")
         # loss calculated only for the trajectories that were predicted
