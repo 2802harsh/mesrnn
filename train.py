@@ -167,7 +167,7 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
                 if t==0:
                     ot_v[n,t,:] = output_trajectories[n,t,:]
                 else:
-                    ot_v[n,t,:] = [v2-v1 for v1,v2 in zip(output_trajectories[n,t-1,:], output_trajectories[n,t,:])]
+                    ot_v[n,t,:] = output_trajectories[n,t,:] - output_trajectories[n,t-1,:] 
         
         ot_v_np = ot_v.detach().cpu().numpy()
         vmax = np.max(ot_v_np)
