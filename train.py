@@ -80,9 +80,9 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvatu
         # Convert positions to velocity relative to first frame
 
         # print("BEFORE",trajectories)
-        initial_pos = trajectories[:, 0:1, :]
+#         initial_pos = trajectories[:, 0:1, :]
         # print("POSS",initial_pos)
-        trajectories[:,1:,:] = trajectories[:,1:,:] - initial_pos
+#         trajectories[:,1:,:] = trajectories[:,1:,:] - initial_pos
         # print("AFTER",trajectories)
         # observed trajectories are taken as is
         output_trajectories[:, :args.obs_length, :] = trajectories[:, :args.obs_length, :]
