@@ -165,26 +165,32 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix=""):
         ot_v = copy.deepcopy(output_trajectories)
         for t in range(args.obs_length-1):
             for n in range(valid_peds):
-                ot_v[n,t,:] = [v2-v1 for v1,v2 in zip(output_trajectories[n,t,:], output_trajectories[n,t+1,:])]
+                if t==0:
+                    ot_v[n,t,:] = output_trajectories[n,t,:]
+                else:
+                    ot_v[n,t,:] = [v2-v1 for v1,v2 in zip(output_trajectories[n,t-1,:], output_trajectories[n,t,:])]
         
         ot_v_np = np.array(ot_v)
         vmax = np.max(ot_v_np)
         vmin = np.min(ot_v_np)
 
-        vt_np = np.array(vel_trajectories)
+        # vt_np = np.array(vel_trajectories)
 
         #Sigmoid
-        vt_np_sig = 1/(1+np.exp(-vt_np))
-        vt_final = vmin + vt_np_sig*(vmax-vmin)
+        vt_sig = torch.sigmoid(vel_trajectories)
+        vt_final = vmin + vt_sig*(vmax-vmin)
+        # vt_np_sig = 1/(1+np.exp(-vt_np))
+        # vt_final = vmin + vt_np_sig*(vmax-vmin)
+
         #ReLU
 
-        vel_trajectories = vt_final.tolist()
+        # vel_trajectories = vt_final     
 
 
         #Convert back to trajectories:
         for t in range(args.obs_length, args.obs_length + args.pred_length):
             for n in range(valid_peds):
-                output_trajectories[n,t,:] = [p+v for p,v in zip(output_trajectories[n,t-1,:], vel_trajectories[n,t,:])]
+                output_trajectories[n,t,:] = [p+v for p,v in zip(output_trajectories[n,t-1,:], vt_final[n,t,:])]
 
         logging.info(f"Finished predicted period in {time() - start_time} s.")
         # loss calculated only for the trajectories that were predicted
