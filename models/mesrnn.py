@@ -9,7 +9,63 @@ __version__ = "1.0"
 __email__ = "hasanaamir215@gmail.com; aamirh2@illinois.edu"
 
 import torch.nn as nn
-from torch import sum, stack, cat
+from torch import sum, stack, cat, stack, unbind
+
+def conv3x3(in_planes, out_planes, stride=1):
+    return nn.Conv1d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
+
+# SELayer Source: https://github.com/HuangxingLin123/A2Net-Adjacent-Aggregation-Networks-for-Image-Raindrop-Removal
+
+class SELayer(nn.Module):
+    def __init__(self, channel, reduction=16):
+        super(SELayer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool1d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1)
+        return x * y.expand_as(x)
+
+class SEBasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
+                 base_width=64, dilation=1, norm_layer=None,
+                 *, reduction=16):
+        super(SEBasicBlock, self).__init__()
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm1d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = conv3x3(planes, planes, 1)
+        self.bn2 = nn.BatchNorm1d(planes)
+        self.se = SELayer(planes, reduction)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        residual = x
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.se(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
 
 
 class EdgeRNN(nn.Module):
@@ -52,6 +108,9 @@ class EdgeRNN(nn.Module):
         # embed averaged inputs
         embedded = self.embedding_layer(averaged_inputs)
         embedded = embedded.view([1, self.__embed_length__])
+        # print("emb", embedded.size(), h_0.size(), c_0.size())
+        if h_0.size()[0] == 128:
+            h_0 = h_0[None, :]
         # Run embedded inputs through RNN cell
         h_1, c_1 = self.LSTM(embedded, (h_0, c_0))
 
@@ -86,6 +145,9 @@ class NodeRNN(nn.Module):
                 nn.Linear(self.__hidden_length__, self.__output_length__),
                 nn.Tanh()
                 )
+        self.ca1 = SEBasicBlock(128,128)
+        self.ca2 = SEBasicBlock(128,128)
+        self.ca3 = SEBasicBlock(128,128)
 
     def forward(self, node_pos, edges, h_0, c_0):
         """
@@ -100,9 +162,47 @@ class NodeRNN(nn.Module):
         :return: Next trajectory coordinates, and (h_1, c_1) the hidden state and cell state after running through input
         :rtype: Tensor(1, 2), Tensor of size (1, hidden_length), Tensor of size (1, hidden_length)
         """
+
+        # print(node_pos.size())
         # embed input positions
         embedded = self.embedding_layer(node_pos)
         embedded = embedded.view([1, self.__embed_length__])
+        # print(embedded.size())
+        # h_stack = []
+
+        for idx, edge in enumerate(edges):
+            # print("prev",edge.size())
+            if edge.size()[0] == 128:
+                continue
+            b = edge[0,:]
+            edge = b
+            edges[idx] = edge
+        # print("len",edges[0].size())
+        h_stack = stack(edges, dim=0)
+        # print(h_stack.size())
+        h_stack_t = stack([h_stack], dim=2)
+        # print(h_stack_t.size())
+        h_stack_t = self.ca1(h_stack_t)
+        h_stack_t = self.ca2(h_stack_t)
+        h_stack_t = self.ca3(h_stack_t)
+
+        edges_stacked = unbind(h_stack_t, dim=2)
+        edges_stacked = edges_stacked[0]
+        # print(edges_stacked.size())
+
+        edges_list = unbind(edges_stacked, dim=0)
+        edges_list = list(edges_list)
+        # print(len(edges_list))
+
+        for idx, edge in enumerate(edges_list):
+            if edge.size()[0] == 1:
+                continue
+            b = edge[None, :]
+            edge = b
+            # print(edge.size())
+            edges_list[idx] = edge
+
+        edges = edges_list
 
         # concatenate embedded vector and hidden states from edges
         concat = cat([embedded, cat(edges, dim=0)], dim=0)
@@ -110,7 +210,7 @@ class NodeRNN(nn.Module):
         
         # Run concatenated vector through RNN cell
         h_1, c_1 = self.LSTM(concat, (h_0, c_0))
-
+        
         # decode hidden state
         output = self.decoding_layer(h_1)
 
