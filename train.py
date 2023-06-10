@@ -189,17 +189,16 @@ def train_loop(model, dataset, optimizer, loss_fn, args, save_prefix="", curvatu
         # updating the parameters
         optimizer.step()
 
-        # save model
-        save_path = join(args.save_dir, f"{save_prefix}_most_recent_model.pkl")
-        logging.info(f"Saving model at {save_path}.")
-        torch.save({
-                'state_dict'          : model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict()
-                }, save_path)
-
         logging.info(f"Time for sample: {time() - start_sample}")
         logging.info(f"Running epoch loss: {epoch_loss} \n")
     logging.info(f"Finished running epoch loop on {DSIZE} scenes. Took {time() - epoch_start} seconds.")
+    # save model
+    save_path = join(args.save_dir, f"{save_prefix}_most_recent_model.pkl")
+    logging.info(f"Saving model at {save_path}.")
+    torch.save({
+            'state_dict'          : model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict()
+            }, save_path)
     return epoch_loss / DSIZE
 
 def val_loop(model, dataset, loss_fn, args, save_prefix="", save=False):
