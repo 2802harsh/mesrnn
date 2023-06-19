@@ -16,7 +16,8 @@ from pickle import load
 
 
 class TrajectoryDataset(Dataset):
-    __datasets__ = ["eth_univ", "eth_hotel", "ucy_zara01", "ucy_zara02", "ucy_univ"]
+    # __datasets__ = ["eth_univ", "eth_hotel", "ucy_zara01", "ucy_zara02", "ucy_univ"]
+    __datasets__ = ["biwi_hotel", "crowds_students003", "crowds_students001", "crowds_zara01", "crowds_zara03", "lcas", "wildtrack"]
 
     def __init__(self, test_dataset, root_dir, test=False):
         """
