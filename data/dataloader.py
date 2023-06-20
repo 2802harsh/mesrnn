@@ -16,7 +16,9 @@ from pickle import load
 
 
 class TrajectoryDataset(Dataset):
-    __datasets__ = ["eth_univ", "eth_hotel", "ucy_zara01", "ucy_zara02", "ucy_univ"]
+    # __datasets__ = ["eth_univ", "eth_hotel", "ucy_zara01", "ucy_zara02", "ucy_univ"]
+    __datasets__ = ["eth_univ", "eth_hotel"]
+    # __datasets__ = ["biwi_hotel", "crowds_students003", "crowds_students001", "crowds_zara01", "crowds_zara03", "lcas", "wildtrack"]
 
     def __init__(self, test_dataset, root_dir, test=False):
         """
@@ -31,7 +33,7 @@ class TrajectoryDataset(Dataset):
                 raise ValueError("Data has not been preprocessed! Please run preprocessor.py")
 
         # check to make sure the test_dataset index is valid
-        if test_dataset < 0 or test_dataset > 4:
+        if test_dataset < 0 or test_dataset > 2:
             raise ValueError("Invalid test dataset. Must be between 0 and 4.")
 
         # load all the paths for the scenes
