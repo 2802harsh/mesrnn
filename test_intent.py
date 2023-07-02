@@ -59,7 +59,7 @@ def test_loop(model, dataset, args, save_prefix="", save=False):
 
 
             initial_pos = trajectories[:,0:1, :]
-            trajectories[:,1:, :] = trajectories[:, 1:, :] - initial_pos
+            trajectories[:,1:args.obs_length, :] = trajectories[:, 1:args.obs_length, :] - initial_pos
             # observed trajectories are taken as is
             output_trajectories[:, :args.obs_length, :] = trajectories[:, :args.obs_length, :]
 
